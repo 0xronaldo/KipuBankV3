@@ -3,38 +3,27 @@
 Autor: Brayan Sanchez  
 Fecha: 2 de noviembre de 2025
 
-## Descripción
+## Descripcion
 
-KipuBankV2 es una evolución del contrato KipuBank original que implementa control de acceso basado en roles mediante AccessControl de OpenZeppelin, soporte multi-token con contabilidad normalizada a 6 decimales, integración con oráculos de Chainlink para conversión de precios ETH/USD, y un sistema de bank cap dinámico. El contrato utiliza errores personalizados para optimización de gas, eventos detallados para observabilidad, y sigue el patrón Checks-Effects-Interactions para prevenir vulnerabilidades de reentrancy.
+KipuBankV2 es un banco descentralizado que permite depositar y retirar ETH y tokens ERC-20. Implementa control de acceso con roles, normaliza todos los balances a 6 decimales para facilitar la contabilidad, y usa oráculos de Chainlink para obtener el precio de ETH en USD y controlar un límite máximo de depósitos.
 
-La arquitectura implementa mappings anidados para gestionar balances multi-token por usuario, variables immutable para ahorro de gas en lecturas repetidas, y funciones de conversión decimal para normalizar diferentes tokens al estándar USDC de 6 decimales. El sistema de roles permite separación de responsabilidades administrativas con ADMIN para gestión de tokens y pausa, y MANAGER para actualización de límites operacionales.
+## Se implemento : 
+Control de Acceso
 
-## Mejoras Implementadas
+Declaraciones de Tipos
 
-**Control de Acceso**  
-Sistema de roles mediante AccessControl con tres niveles: DEFAULT_ADMIN_ROLE para control total del contrato, ADMIN para gestión de tokens soportados y pausa de emergencia, y MANAGER para actualización del bank cap. Permite múltiples administradores y separación granular de permisos.
+Instancia del Oráculo Chainlink
 
-**Soporte Multi-Token**  
-Arquitectura que soporta ETH nativo mediante address(0) y múltiples tokens ERC-20. Sistema dinámico para agregar tokens con struct TokenInfo que almacena estado activo y decimales. Utiliza SafeERC20 de OpenZeppelin para transferencias seguras.
+Variables Constant
 
-**Contabilidad Normalizada**  
-Mapping anidado `mapping(address => mapping(address => uint256))` almacena balances de cada usuario por token. Normalización automática a 6 decimales (estándar USDC) mediante función `_normalizar()` para facilitar operaciones aritméticas entre tokens con diferentes decimales.
+Mappings anidados
 
-**Integración Chainlink**  
-Instancia immutable de AggregatorV3Interface conectada al Data Feed ETH/USD de Chainlink en Sepolia (0x694AA1769357215DE4FAC081bf1f309aDC325306). Función `obtenerPrecioETH()` retorna precio con 8 decimales, `convertirETHaUSD()` convierte montos de 18 decimales a 6 decimales USD.
+Función de conversión de decimales y valores
 
-**Conversión de Decimales**  
-Función privada `_normalizar(uint256 monto, uint8 decimalesOrigen)` convierte cualquier cantidad a 6 decimales. Si decimalesOrigen > 6, divide por 10^(diff). Si decimalesOrigen < 6, multiplica por 10^(diff). Función complementaria para denormalización al consultar balances originales.
 
-**Eventos y Errores**  
-Errores custom: BancoPausado, MontoInvalido, SaldoInsuficiente, TokenNoSoportado, LimiteSuperado, TransferenciaFallida. Eventos: Deposito(usuario, token, monto), Retiro(usuario, token, monto), TokenAgregado(token, decimales), LimiteActualizado(nuevoLimite).
+## Componentes del Contrato
 
-**Seguridad**  
-Patrón Checks-Effects-Interactions en todas las funciones de transferencia. Variables immutable (dueno, oracleETHUSD) y constant (DECIMALES_USD, ETH_ADDRESS) para optimización de gas. Sistema de pausa mediante flag booleano. Validación de precios del oráculo.
-
-## Componentes Técnicos del Contrato
-
-### Declaraciones de Tipos
+Declaraciones de Tipos
 ```solidity
 struct TokenInfo {
     bool activo;
@@ -42,94 +31,59 @@ struct TokenInfo {
 }
 ```
 
-### Instancia del Oráculo
+Instancia del Oraculo Chainlink
 ```solidity
 AggregatorV3Interface public immutable oracleETHUSD;
 ```
 
-### Variables Constant
+Variables Constant
 ```solidity
 uint8 private constant DECIMALES_USD = 6;
 address private constant ETH_ADDRESS = address(0);
 ```
 
-### Mappings Anidados
+Mappings Anidados
 ```solidity
 mapping(address => mapping(address => uint256)) public balances;
+mapping(address => TokenInfo) public tokens;
 ```
 
-### Función de Conversión
+Funcion de Conversion de Decimales
 ```solidity
 function _normalizar(uint256 monto, uint8 decimalesOrigen) private pure returns (uint256)
+```
+
+Funcion de Conversión ETH a USD
+```solidity
 function convertirETHaUSD(uint256 montoETH) public view returns (uint256)
 ```
 
-## Pasos a Seguir
+## Librerias que utilizo 
+esto por que lo trabaje en local con foundry
 
 ```bash
-# Instalo las dependencias
-npm install @openzeppelin/contracts @chainlink/contracts
-
-# O con Foundry
 forge install OpenZeppelin/openzeppelin-contracts
 forge install smartcontractkit/chainlink-brownie-contracts
 ```
 
-## Despliegue
+## Contrato Desplegado
+### (Ojo me equivoque de contrato en la plataforma pero aca esta el corregido que se desplego en Remix)
+ 
+Network: Sepolia Testnet  
+Address: 0xFFc86b7ddAde0Fd7f23a0D255F44D7011BFf085b  
+Explorer: https://testnet.routescan.io/address/0xFFc86b7ddAde0Fd7f23a0D255F44D7011BFf085b/contract/11155111/code
 
-### Sepolia Testnet
-```javascript
-// Oráculo ETH/USD en Sepolia
-const ORACLE = "0x694AA1769357215DE4FAC081bf1f309aDC325306";
+## Requisitos Implementados
 
-// Límite: 1,000,000 USD (con 6 decimales)
-const LIMITE = ethers.parseUnits("1000000", 6);
+- Control de Acceso (AccessControl)
+- Declaraciones de Tipos (struct TokenInfo)
+- Instancia del Oráculo Chainlink (immutable)
+- Variables Constant
+- Mappings Anidados
+- Función de conversión de decimales
+- Función de conversión ETH a USD
+- Eventos personalizados
+- Errores custom
+- Patrón Checks-Effects-Interactions
+- Variables immutable
 
-const KipuBankV2 = await ethers.getContractFactory("KipuBankV2");
-const banco = await KipuBankV2.deploy(ORACLE, LIMITE);
-```
-
-### Comando
-```bash
-npx hardhat run scripts/deploy.js --network sepolia
-```
-
-## 💻 Cómo Usar
-
-### Deposito ETH
-```javascript
-// Deposito 1 ETH
-await kipuBank.depositarETH({ value: ethers.parseEther("1.0") });
-```
-
-### Deposito Tokens
-```javascript
-// Primero apruebo
-await token.approve(kipuBankAddress, monto);
-
-// Luego deposito
-await kipuBank.depositarToken(tokenAddress, monto);
-```
-
-### Retiro ETH
-```javascript
-await kipuBank.retirarETH(ethers.parseEther("0.5"));
-```
-
-### Consulto mi Balance
-```javascript
-const balance = await kipuBank.miBalance(tokenAddress);
-const balanceOriginal = await kipuBank.miBalanceOriginal(tokenAddress);
-```
-
-### Administración
-```javascript
-// Agrego un token nuevo
-await kipuBank.agregarToken(tokenAddress, 18);
-
-// Actualizo el límite
-await kipuBank.actualizarLimite(ethers.parseUnits("2000000", 6));
-
-// Pauso en emergencia
-await kipuBank.pausar();
-```
