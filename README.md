@@ -44,15 +44,13 @@ TokenInfo struct agrego campo requiresSwap booleano para distinguir tokens que n
 
 Receive function mantiene logica similar pero llama _swapETHToUSDC en lugar de _normalizar. Eventos mantienen nombres pero Deposito ahora incluye montoOriginal y montoUSDC para rastrear conversion. Error ParNoExiste y SlippageExcedido se agregaron para manejo de fallas Uniswap. La funcion estimarSwapAUSDC permite preview de conversion antes de ejecutar transaccion, retorna 0 si par inexistente.
 
-## Evidencias de Desarrollo
+## Capturas de Pantalla
 
-El desarrollo del contrato se documento mediante capturas que muestran el proceso de implementacion y despliegue:
+proceso de implementacion y despliegue:
 
 ![Desarrollo del contrato](./res/Captura%20de%20pantalla%202025-11-13%20225711.png)
 
 ![Proceso de compilacion](./res/Captura%20de%20pantalla%202025-11-14%20004412.png)
 
 ![Despliegue exitoso](./res/Captura%20de%20pantalla%202025-11-15%20005423.png)
-
-Las imagenes documentan el desarrollo desde KipuBankV2 hasta la version final V3 con integracion Uniswap V2, mostrando la implementacion de swaps automaticos y el manejo unificado de balances en USDC.
 
